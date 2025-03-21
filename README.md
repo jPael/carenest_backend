@@ -1,3 +1,5 @@
+# NOTE: PRACTICE ONLY
+
 # Project Setup Guide
 
 This guide will walk you through setting up Google Firebase, registering a web application, and configuring the `.env` file for your project.
