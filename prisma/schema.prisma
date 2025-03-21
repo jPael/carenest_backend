@@ -1,0 +1,230 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // directUrl = env("DIRECT_URL")
+}
+
+// Prenatal Record Data
+
+enum UserTypeEnum {
+  MOTHER
+  MIDWIFE
+}
+
+model User {
+  id         String @id @default(uuid())
+  firebaseId String
+
+  patients            PatientInformation[] @relation("patients")
+  assignedPatients    PatientInformation[] @relation("AssignedBy")
+  accompaniedPatients PatientInformation[] @relation("accompaniedBy")
+  PrenatalRecord      PrenatalRecord[]
+}
+
+model PatientInformation {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], name: "patients")
+
+  philhealth  Boolean
+  nhtsl       Boolean
+  lmp         DateTime
+  birth_place String
+  ob_status   String
+  edc         DateTime
+
+  assigned_by_id    String
+  assigned_by       User             @relation(fields: [assigned_by_id], references: [id], name: "AssignedBy")
+  accompanied_by_id String
+  accompanied_by    User             @relation(fields: [accompanied_by_id], references: [id], name: "accompaniedBy")
+  BloodDonors       BloodDonors[]
+  Imunization       Imunization[]
+  IronSupplement    IronSupplement[]
+  PrenatalRecord    PrenatalRecord[]
+}
+
+model BloodDonors {
+  id             String  @id @default(uuid())
+  fullname       String
+  contact_number String
+  blood_typed    Boolean
+
+  patient    PatientInformation @relation(fields: [patient_id], references: [id])
+  patient_id String
+}
+
+model PrenatalRecord {
+  id String @id @default(uuid())
+
+  patient_id String
+  patient    PatientInformation @relation(fields: [patient_id], references: [id])
+
+  wht_personel    User   @relation(fields: [wht_personel_id], references: [id])
+  wht_personel_id String
+
+  ClinicVisits ClinicVisits[]
+}
+
+enum Trimester {
+  FIRST
+  SECOND
+  THIRD
+}
+
+model ClinicVisits {
+  id                        String    @id @default(uuid())
+  trimester                 Trimester @default(FIRST)
+  consult_wht               Boolean   @default(false)
+  wht_introduced_birth_plan Boolean   @default(false)
+  fundic_height             String
+  blood_pressure            String
+  created_at                DateTime  @default(now())
+  updated_at                DateTime  @updatedAt()
+
+  patient_record    PrenatalRecord   @relation(fields: [patient_record_id], references: [id])
+  patient_record_id String
+  Advice            Advice[]
+  Services          Services[]
+  Imunization       Imunization[]
+  IronSupplement    IronSupplement[]
+  Counseling        Counseling[]
+}
+
+model Advice {
+  id              Int          @id @default(autoincrement())
+  content         String
+  clinic_visit    ClinicVisits @relation(fields: [clinic_visit_id], references: [id])
+  clinic_visit_id String
+}
+
+model Services {
+  id              Int          @id @default(autoincrement())
+  content         String
+  clinic_visit_id String
+  clinic_visit    ClinicVisits @relation(fields: [clinic_visit_id], references: [id])
+}
+
+model Imunization {
+  id         Int      @id @default(autoincrement())
+  term       Int
+  created_at DateTime @default(now())
+
+  clinic_visit_id      String
+  clinic_visit         ClinicVisits        @relation(fields: [clinic_visit_id], references: [id])
+  PatientInformation   PatientInformation? @relation(fields: [patientInformationId], references: [id])
+  patientInformationId String?
+}
+
+model IronSupplement {
+  id         Int      @id @default(autoincrement())
+  tabs       Int
+  created_at DateTime @default(now())
+
+  clinic_visit_id      String
+  clinic_visit         ClinicVisits        @relation(fields: [clinic_visit_id], references: [id])
+  PatientInformation   PatientInformation? @relation(fields: [patientInformationId], references: [id])
+  patientInformationId String?
+}
+
+model Counseling {
+  id                     Int     @id @default(autoincrement())
+  breast_feeding         Boolean
+  family_planning        Boolean
+  child_proper_nutrition Boolean
+  self_proper_nutrition  Boolean
+
+  clinic_visit_id String
+  clinic_visit    ClinicVisits @relation(fields: [clinic_visit_id], references: [id])
+}
+
+// Reminders Data
+
+enum ReminderTypeEnum {
+  PRENATAL_CHECKUP
+  NUTRITION_SEMINAR
+  VACCINATION_DRIVE
+}
+
+model Reminders {
+  id            Int              @id @default(autoincrement())
+  user_uid      String
+  type          ReminderTypeEnum
+  date_and_time DateTime
+  title         String
+  purpose       String
+}
+
+// Chat Data
+
+model Conversation {
+  id               String             @id @default(uuid())
+  create_at        DateTime           @default(now())
+  ConversationUser ConversationUser[]
+  Messages         Messages[]
+}
+
+model ConversationUser {
+  id String @id @default(uuid())
+
+  user_uid        String
+  conversation_id String
+  convsersation   Conversation @relation(fields: [conversation_id], references: [id])
+}
+
+model Messages {
+  id         String   @id @default(uuid())
+  content    String
+  created_at DateTime @default(now())
+
+  conversation_id String
+  conversation    Conversation @relation(fields: [conversation_id], references: [id])
+}
+
+// Forum
+
+model Forum {
+  id         String   @id @default(uuid())
+  title      String
+  content    String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  author       String
+  ForumLikes   ForumLikes[]
+  ForumRieples ForumReplies[]
+}
+
+model ForumLikes {
+  user     String
+  forum_id String
+  forum    Forum  @relation(fields: [forum_id], references: [id])
+
+  created_at DateTime @default(now())
+
+  @@unique([user, forum_id])
+}
+
+model ForumReplies {
+  id         String   @id @default(uuid())
+  content    String
+  create_at  DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  author          String
+  forum_id        String
+  forum           Forum             @relation(fields: [forum_id], references: [id])
+  ForumReplyLikes ForumReplyLikes[]
+}
+
+model ForumReplyLikes {
+  id       String       @id @default(uuid())
+  user     String
+  reply_id String
+  reply    ForumReplies @relation(fields: [reply_id], references: [id])
+
+  created_at DateTime @default(now())
+}
